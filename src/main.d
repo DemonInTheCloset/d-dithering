@@ -1,7 +1,8 @@
-import std.stdio;
-import std.getopt;
-
 void main(string[] args) {
+    import std.stdio;
+    import std.getopt;
+    import std.format;
+
     string src = "";
     string dst = "out.png";
     bool verbose = false;
@@ -18,7 +19,7 @@ void main(string[] args) {
             );
 
     if (helpInfo.helpWanted) {
-        defaultGetoptPrinter("Some information", helpInfo.options);
+        defaultGetoptPrinter("Usage: %s [Options] -i IMAGE".format(args[0]), helpInfo.options);
     }
 
     if (debugging) {
