@@ -76,11 +76,33 @@ struct RawStaticImage(PixType, uint Width, uint Height) {
 }
 
 struct RawImage(PixType) {
+    immutable uint width;
+    immutable uint height;
     PixType[] pixels;
+
+    @disable this(); // A Raw Image cannot be rezised, you have to know the size in advance
+
+    this(int w, int h) {
+        width = w;
+        height = h;
+        pixels = new PixType[](w * h);
+    }
+
+    invariant
+    {
+        assert(pixels.length == width * height);
+    }
 }
 
 // Image Aliases
-alias RawStaticGSImage(ubyte depth, uint Width, uint Height) = RawImage!(PixGS!depth, Width, Height);
-alias RawStaticGSAImage(ubyte depth, uint Width, uint Height) = RawImage!(PixGSA!depth, Width, Height);
-alias RawStaticRGBImage(ubyte depth, uint Width, uint Height) = RawImage!(PixRGB!depth, Width, Height);
-alias RawStaticRGBAImage(ubyte depth, uint Width, uint Height) = RawImage!(PixRGBA!depth, Width, Height);
+alias RawStaticGSImage(ubyte depth, uint Width, uint Height) = RawStaticImage!(PixGS!depth, Width, Height);
+alias RawStaticGSAImage(ubyte depth, uint Width, uint Height) = RawStaticImage!(PixGSA!depth, Width, Height);
+alias RawStaticRGBImage(ubyte depth, uint Width, uint Height) = RawStaticImage!(PixRGB!depth, Width, Height);
+alias RawStaticRGBAImage(ubyte depth, uint Width, uint Height) = RawStaticImage!(PixRGBA!depth, Width, Height);
+
+alias RawGSImage(ubyte depth) = RawImage!(PixGS!depth);
+alias RawGSAImage(ubyte depth) = RawImage!(PixGSA!depth);
+alias RawRGBImage(ubyte depth) = RawImage!(PixRGB!depth);
+alias RawRGBAImage(ubyte depth) = RawImage!(PixRGBA!depth);
+
+// Funtions
