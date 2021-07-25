@@ -155,6 +155,13 @@ unittest
 {
 }
 
+// PNG enums
+enum PNGBitDepth : byte { ONE=1, TWO=2, FOUR=4, EIGHT=8, SIXTEEN=16 };
+enum PNGColorType : byte { INDEXED=3, GRAYSCALE=0, GRAYSCALEALPHA=4, TRUECOLOR=2, TRUECOLORALPHA=6 };
+enum PNGCompression : byte { DEFLATE=0 };
+enum PNGFilter : byte { NONE=0, SUB=1, UP=2, AVERAGE=3, PAETH=4 };
+enum PNGInterlace : byte { NONE=0, ADAM7=1 };
+
 // Chunks
 bool nullCRC(in ubyte[4] crc) pure nothrow
 {
@@ -178,6 +185,11 @@ struct StaticPNGChunk(immutable(char)[4] Type, size_t Size)
         immutable(char)[4] chunkType = Type;
         ubyte[Size] chunkData;
         private ubyte[4] chunkCRC;
+
+    this(in ubyte[Size] data)
+    {
+        this.chunkData = data;
+    }
 
     /// Calculates this chunks CRC
     private ubyte[4] calculateCRC() pure nothrow
@@ -207,6 +219,59 @@ struct StaticPNGChunk(immutable(char)[4] Type, size_t Size)
 // Fixed size Chunks
 alias PNGIHDR = StaticPNGChunk!("IHDR", 13);
 alias PNGIEND = StaticPNGChunk!("IEND", 0);
+
+PNGIHDR buildIHDR(uint width, uint height, PNGBitDepth bitDepth,
+        PNGColorType colorType, PNGCompression compressionType,
+        PNGFilter filterType, PNGInterlace interlaceType) pure nothrow
+{
+    import std.bitmanip : nativeToBigEndian;
+
+    if (bitDepth == PNGBitDepth.SIXTEEN)
+    {
+        assert(colorType != PNGColorType.INDEXED);
+    }
+    else if (bitDepth != PNGBitDepth.EIGHT)
+    {
+        assert(colorType == PNGColorType.INDEXED
+                || colorType == PNGColorType.GRAYSCALE);
+    }
+
+    ubyte[13] data = width.nativeToBigEndian ~ height.nativeToBigEndian
+        ~ bitDepth.nativeToBigEndian ~ colorType.nativeToBigEndian
+        ~ compressionType.nativeToBigEndian ~ filterType.nativeToBigEndian
+        ~ interlaceType.nativeToBigEndian;
+
+    PNGIHDR header = PNGIHDR(data);
+
+    header.fillCRC;
+
+    return header;
+}
+
+unittest
+{
+    immutable PNGIHDR chunk = buildIHDR(16, 16, PNGBitDepth.EIGHT,
+            PNGColorType.TRUECOLOR, PNGCompression.NONE,
+            PNGFilter.NONE, PNGInterlace.NONE);
+
+    assert(chunk.validCRC());
+}
+
+PNGIEND buildIEND() pure nothrow
+{
+    PNGIEND imgEnd;
+
+    imgEnd.fillCRC();
+
+    return imgEnd;
+}
+
+unittest
+{
+    immutable PNGIEND chunk = buildIEND();
+
+    assert(chunk.validCRC());
+}
 
 struct DynamicPNGChunk(immutable(char)[4] Type)
 {
