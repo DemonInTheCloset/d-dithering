@@ -117,4 +117,42 @@ alias RawGSAImage(ubyte depth) = RawImage!(PixGSA!depth);
 alias RawRGBImage(ubyte depth) = RawImage!(PixRGB!depth);
 alias RawRGBAImage(ubyte depth) = RawImage!(PixRGBA!depth);
 
-// Funtions
+// PNG Reading
+immutable ubyte[8] validPNGSignature = [
+    ubyte(0x89), ubyte(0x50), ubyte(0x4E), ubyte(0x47),
+    ubyte(0x0D), ubyte(0x0A), ubyte(0x1A), ubyte(0x0A)
+];
+
+struct PNGSignature
+{
+    static assert(PNGSignature.sizeof == 8);
+    ubyte[8] signature;
+
+    /// Checks the PNG Signature
+    bool isvalid() pure nothrow
+    {
+        static foreach (ix, b; validPNGSignature)
+        {
+            if (b != this.signature[ix])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    unittest
+    {
+        PNGSignature sign = PNGSignature(validPNGSignature);
+
+        assert(sign.isvalid());
+        sign.signature[1] = 0;
+        assert(!sign.isvalid());
+    }
+}
+
+unittest
+{
+}
+
+// Functions
