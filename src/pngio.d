@@ -192,7 +192,7 @@ struct StaticPNGChunk(immutable(char)[4] Type, size_t Size)
     }
 
     /// Calculates this chunks CRC
-    private ubyte[4] calculateCRC() pure nothrow
+    private ubyte[4] calculateCRC() const pure nothrow
     {
         import std.digest.crc : crc32Of;
         ubyte[Size + 8] data = cast(const(ubyte)[])chunkType ~ chunkData ~ chunkCRC;
@@ -210,7 +210,7 @@ struct StaticPNGChunk(immutable(char)[4] Type, size_t Size)
     }
 
     /// Validates chunck CRC
-    bool validCRC() pure nothrow
+    bool validCRC() const pure nothrow
     {
         return this.calculateCRC.nullCRC;
     }
@@ -251,7 +251,7 @@ PNGIHDR buildIHDR(uint width, uint height, PNGBitDepth bitDepth,
 unittest
 {
     immutable PNGIHDR chunk = buildIHDR(16, 16, PNGBitDepth.EIGHT,
-            PNGColorType.TRUECOLOR, PNGCompression.NONE,
+            PNGColorType.TRUECOLOR, PNGCompression.DEFLATE,
             PNGFilter.NONE, PNGInterlace.NONE);
 
     assert(chunk.validCRC());
@@ -278,7 +278,7 @@ struct DynamicPNGChunk(immutable(char)[4] Type)
     ubyte[] chunkData;
     private ubyte[4] chunkCRC;
 
-    private ubyte[4] calculateCRC() pure nothrow
+    private ubyte[4] calculateCRC() const pure nothrow
     {
         import std.digest.crc : crc32Of;
         ubyte[] data = Type ~ chunkData ~ chunkCRC;
@@ -292,7 +292,7 @@ struct DynamicPNGChunk(immutable(char)[4] Type)
         this.chunkCRC = this.calculateCRC();
     }
 
-    void validCRC()
+    void validCRC() const pure nothrow
     {
         return this.calculateCRC.nullCRC;
     }
