@@ -118,22 +118,22 @@ alias RawRGBImage(ubyte depth) = RawImage!(PixRGB!depth);
 alias RawRGBAImage(ubyte depth) = RawImage!(PixRGBA!depth);
 
 // PNG Reading
-immutable ubyte[8] validPNGSignature = [
+immutable ubyte[8] validPNGHeader = [
     ubyte(0x89), ubyte(0x50), ubyte(0x4E), ubyte(0x47),
     ubyte(0x0D), ubyte(0x0A), ubyte(0x1A), ubyte(0x0A)
 ];
 
-struct PNGSignature
+struct PNGHeader
 {
-    static assert(PNGSignature.sizeof == 8);
-    ubyte[8] signature;
+    static assert(PNGHeader.sizeof == 8);
+    ubyte[8] header;
 
     /// Checks the PNG Signature
     bool isvalid() pure nothrow
     {
-        static foreach (ix, b; validPNGSignature)
+        static foreach (ix, b; validPNGHeader)
         {
-            if (b != this.signature[ix])
+            if (b != this.header[ix])
             {
                 return false;
             }
@@ -143,16 +143,94 @@ struct PNGSignature
 
     unittest
     {
-        PNGSignature sign = PNGSignature(validPNGSignature);
+        PNGHeader header = PNGHeader(validPNGHeader);
 
-        assert(sign.isvalid());
-        sign.signature[1] = 0;
-        assert(!sign.isvalid());
+        assert(header.isvalid());
+        header.header[1] = 0;
+        assert(!header.isvalid());
     }
 }
 
 unittest
 {
+}
+
+// Chunks
+bool nullCRC(in ubyte[4] crc) pure nothrow
+{
+    static foreach(ix; 0..4)
+    {
+        if (crc[ix] != 0)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+struct StaticPNGChunk(immutable(char)[4] Type, size_t Size)
+{
+    static assert(StaticPNGChunk.sizeof == Size + 12);
+
+    align(1):
+        private uint chunkLength = Size;
+        immutable(char)[4] chunkType = Type;
+        ubyte[Size] chunkData;
+        private ubyte[4] chunkCRC;
+
+    /// Calculates this chunks CRC
+    private ubyte[4] calculateCRC() pure nothrow
+    {
+        import std.digest.crc : crc32Of;
+        ubyte[Size + 8] data = cast(const(ubyte)[])chunkType ~ chunkData ~ chunkCRC;
+
+        return data.crc32Of;
+    }
+
+    /// Compute and fill Chunk CRC
+    void fillCRC() nothrow
+    {
+        // CRC must be empty before calling this function
+        assert(this.chunkCRC.nullCRC);
+
+        this.chunkCRC = this.calculateCRC();
+    }
+
+    /// Validates chunck CRC
+    bool validCRC() pure nothrow
+    {
+        return this.calculateCRC.nullCRC;
+    }
+}
+
+// Fixed size Chunks
+alias PNGIHDR = StaticPNGChunk!("IHDR", 13);
+alias PNGIEND = StaticPNGChunk!("IEND", 0);
+
+struct DynamicPNGChunk(immutable(char)[4] Type)
+{
+    ubyte[] chunkData;
+    private ubyte[4] chunkCRC;
+
+    private ubyte[4] calculateCRC() pure nothrow
+    {
+        import std.digest.crc : crc32Of;
+        ubyte[] data = Type ~ chunkData ~ chunkCRC;
+
+        return data.crc32Of;
+    }
+
+    void fillCRC() nothrow
+    {
+        assert(this.chunkCRC.nullCRC);
+        this.chunkCRC = this.calculateCRC();
+    }
+
+    void validCRC()
+    {
+        return this.calculateCRC.nullCRC;
+    }
 }
 
 // Functions
