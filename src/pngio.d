@@ -10,6 +10,7 @@ struct PixGS(ubyte depth)
     else
         static assert(0, "Unsupported bit depth %u".format(depth));
 
+    static assert(Type.sizeof == depth / 8);
     Type value;
 }
 
@@ -35,6 +36,7 @@ struct PixTruecolor(ubyte depth)
     else
         static assert(0, "Unsupported bit depth %u".format(depth));
 
+    static assert(Type.sizeof == depth / 8);
     Type red;
     Type green;
     Type blue;
@@ -49,6 +51,7 @@ struct PixTruecolorA(ubyte depth)
     else
         static assert(0, "Unsupported bit depth %u".format(depth));
 
+    static assert(Type.sizeof == depth / 8);
     Type red;
     Type green;
     Type blue;
@@ -86,7 +89,7 @@ struct RawImage(PixType)
     immutable uint height;
     PixType[] pixels;
 
-    // A Raw Image cannot be rezised, you have to know the size in advance
+    // A Raw Image cannot be resized, you have to know the size in advance
     @disable this();
 
     this(int w, int h)
