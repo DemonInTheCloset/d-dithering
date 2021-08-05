@@ -19,10 +19,12 @@ void main(string[] args) {
             );
 
     if (helpInfo.helpWanted) {
-        defaultGetoptPrinter("Usage: %s [Options] -i IMAGE".format(args[0]), helpInfo.options);
+        defaultGetoptPrinter("Usage: %s [Options] -i IMAGE".format(args[0]),
+                helpInfo.options);
     }
 
     if (debugging) {
-        writefln("Input: %s\nOutput: %s\nVerbose: %s\nDebug: true", src, dst, verbose);
+        writefln("Input: %s\nOutput: %s\nVerbose: %s\nDebug: true", src, dst,
+                verbose);
     }
 }
